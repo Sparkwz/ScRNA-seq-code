@@ -201,6 +201,9 @@ DimPlot(seurat.data, reduction = "umap", group.by = "RNA_snn_res.0.3", label = T
 
 #########################亚群注释########################
 #####COSG方法#####
+##本地安装COSG##
+remotes::install_local("~/Rpackages/COSGR",upgrade = F,dependencies = T)
+##COSG运行##
 library(COSG)
 marker_cosg <- COSG::cosg(
   seurat.data,
@@ -217,7 +220,7 @@ write.csv(markers, file = "~/Spark/Step3.COSG_res.csv")
 
 options(repr.plot.width = 7.5, repr.plot.height = 4)
 
-##绘制标志基因气泡图
+##绘制标志基因气泡图01
 options(repr.plot.width = 7.5, repr.plot.height = 7)
 check_genes = c("RGS1","PTPRC",'TYROBP', #Leukocytes (Leu) 
                 'CD3D','CD3E',"CD3G","CD2",'TRAC','IL32', #T cells
@@ -227,6 +230,27 @@ check_genes = c("RGS1","PTPRC",'TYROBP', #Leukocytes (Leu)
                 "NKG7","KLRD1","IFIT1", #NK cells
                 "IGHM","CD22","CD79A","CD19","MS4A1","SDC1", #B cells
                 "JCHAIN","MZB1","PRDM1","IGJ" #Plasma cells
+)
+DotPlot(object = seurat.data, features = check_genes,assay = "RNA",scale = T) + 
+  coord_flip()
+
+##绘制标志基因气泡图02
+options(repr.plot.width = 7.5, repr.plot.height = 10)
+check_genes = c("RGS1","PTPRC",'TYROBP', #Leukocytes (Leu) 
+                'CD3D','CD3E',"NKG7",
+                'CD68',"HLA-DQB1","HLA-DRB1", #MNP,mononuclear phagocytes
+                "APOE","C1QA",'C1QB',#Macrophages
+                "ITGAX","CD14","FCGR3A","S100A8","MMP19",#Monocyte 
+                "CLEC10A","CLEC4C", #DC cells
+                "IRF8","CLEC9A", "FLT3",#C10_cCD1_CLEC9A IDO1+
+                "CD1E","CD1C","FCGR1A","SIRPA", "MAFB", #C6_cCD2_CD1C
+                "CCR7","LAMP3","FSCN1", "IDO1","IDO2", #DC3 #C11_cDC3_LAMP3
+                "LILRA4", "SLC32A1","SHD","LRRC26","PACSIN1","IL3RA", #pDCs C9_pDC_LILRA4 GZMB+
+                "KIT","FCER1G","GATA2",'TPSB2','MS4A2','TPSAB1','ENG','ENPP3', #Mast cells
+                "CSF3R","S100A9","FCGR3B","ALPL","CXCR1",#Neutrophils
+                "OLR1","LDHA","IL1RN","CD44", #PMN-MDSC
+                "CXCR2","ADGRG3","CMTM2","PROK2","MME","MMP25",
+                "TNFRSF10C","CEACAM8" #Neutrophils
 )
 DotPlot(object = seurat.data, features = check_genes,assay = "RNA",scale = T) + 
   coord_flip()
