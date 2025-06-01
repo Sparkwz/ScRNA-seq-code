@@ -30,6 +30,7 @@
 3. 若存在批次效应，则去除批次效应： `Harmony`+`Dimplot`后再进行UMAP非线性降维
 4. FindClusters亚群聚类 
 ### 分群注释
+- 首先推荐COSG，通过`remotes::install_local("~/Rpackages/COSGR",upgrade = F,dependencies = T)`本地安装
 - 外周组织可分为：上皮细胞、免疫细胞、基质细胞
 - 前列腺癌与乳腺癌类似：即上皮细胞可分为管腔和基底细胞，管腔细胞一般为恶性肿瘤细胞，基底细胞为正常上皮细胞
 - 上皮、髓质、T细胞、B细胞、肥大细胞和基质细胞谱系相似性低，一般UMAP图可见泾渭分明
