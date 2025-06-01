@@ -8,6 +8,20 @@
 - **数据处理准则**
  1. 标准三件套：第一步重命名文件，第二步`list.files`+`lappy`循环（`Read10X()`+`CreateSeuratObject()`）读取
  2. 非标准格式：`CreateSeuratObject()`读取
-### 数据读入关键步骤解释(10X 标准三件套)
-- **`Read10X()`** 读入10X标准格式为稀疏矩阵
-- **`CreateSeuratObject()`** 构建Seurat对象
+### 01 数据读入
+- `Read10X()` 读入10X标准格式为稀疏矩阵
+- `CreateSeuratObject()` 构建Seurat对象
+- `merge()` 合并多个样本
+### 02 数据质控
+1. 双细胞预测及过滤（可选）
+2. 质控指标(不同领域过滤标准可能不同）：`PercentageFeatureSet`
+ - **nFeature_RNA**: 每个细胞中检测到的唯一基因数 200-2000
+ - **nCount_RNA**: 每个细胞检测到的分析总数 <500
+ - **percent.mt**：低质量或者死亡细胞含有很高的线粒体基因 >15%
+3. 低质量细胞过滤 `subset`
+4. 基因水平过滤
+### 03 下游分析（三步走）
+- 标准化 确保数据在不同样本之间具有可比性 `NormalizeData`
+- 特征选择 识别细胞类型特征 `FindVariableFeatures`
+- 归一化 减小样本间的技术差异 `ScaleData`
+
