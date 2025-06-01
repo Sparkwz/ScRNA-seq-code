@@ -1,5 +1,5 @@
 # 单细胞数据分析学习笔记
-## 基础处理
+## 基础处理 Basic analysis
 ### 数据储存格式
 - Seurat官网示例数据
 - 10X Cellranger输出标准三件套（barcodes.tsv.gz/features.tsv.gz/matrix.mtx.gz)
@@ -24,4 +24,11 @@
 - 标准化 确保数据在不同样本之间具有可比性 `NormalizeData`
 - 特征选择 识别细胞类型特征 `FindVariableFeatures`
 - 归一化 减小样本间的技术差异 `ScaleData`
-
+### 04 降维聚类去批次（两步不存在先后关系）
+1. PCA线性降维： 减少数据维度、去除技术噪声、保留关键特征
+2. UMAP非线性降维： 映射数据及可视化
+3. 去除批次效应： `Harmony`+`Dimplot`
+4. FindClusters亚群聚类 
+### 分群注释
+- 外周组织可分为：上皮细胞、免疫细胞、基质细胞
+- 前列腺癌与乳腺癌类似：即上皮细胞可分为管腔和基底细胞，管腔细胞一般为恶性肿瘤细胞，基底细胞为正常上皮细胞
