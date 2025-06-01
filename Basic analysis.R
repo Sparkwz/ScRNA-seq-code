@@ -102,11 +102,11 @@ VlnPlot(pbmc,
         features = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.ribo","percent.hb"),
         ncol = 3,
         group.by = "group")
-
+dev.off()
 ##过滤
 pbmc.qc <- subset(pbmc, subset = nFeature_RNA > 250 & nFeature_RNA < 2500 & 
                     nCount_RNA> 500 & percent.mt < 15)
-
+pbmc.qc
 #如果需要根据线粒体、核糖体、血红蛋白过滤
 #pbmc.qc <- subset(pbmc, subset = percent.mt < 15 & percent.ribo> 3 & percent.hb < 0.1)
 
