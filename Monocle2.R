@@ -20,9 +20,39 @@ table(Idents(sce))
 sce <- NormalizeData(sce) %>%
   FindVariableFeatures(selection.method = "vst", nfeatures = 2000)
 
-#Seurat转为Monocle2 cds数据
+#1 Seurat转为Monocle2 cds数据
 HSMM <- as.CellDataSet(sce)
 HSMM
+
+#2 如果是其他格式的数据，需要自行构建cds格式
+#2.1 表型数据（sample id/celltype)
+sample_ann <- sce@meta.data  
+head(sample_ann)
+
+#2.2 基因信息
+gene_ann <- data.frame(
+  gene_short_name = rownames(sce@assays$RNA), 
+  row.names = rownames(sce@assays$RNA) 
+)
+head(gene_ann)
+
+#2.3 表达矩阵
+pd <- new("AnnotatedDataFrame",
+          data=sample_ann)
+fd <- new("AnnotatedDataFrame",
+          data=gene_ann)
+ct=as.data.frame(sce@assays$RNA@counts)
+ct[1:4,1:4]
+
+#2.4 构建cds对象
+HSMM2 <- newCellDataSet(
+  as.matrix(ct), 
+  phenoData = pd,
+  featureData =fd,
+  expressionFamily = negbinomial.size(),
+  lowerDetectionLimit=1)
+HSMM2
+
 #########运行Monocle2########
 HSMM <- estimateSizeFactors(HSMM)
 HSMM <- estimateDispersions(HSMM)
