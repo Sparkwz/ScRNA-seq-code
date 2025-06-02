@@ -54,20 +54,22 @@ HSMM2 <- newCellDataSet(
 HSMM2
 
 #########运行Monocle2########
+##01 Estimate size factor##
 HSMM <- estimateSizeFactors(HSMM)
 HSMM <- estimateDispersions(HSMM)
+saveRDS(HSMM,file = "~/Spark/Step1.HSMM.rds")
 
-########数据质控########
+##02 数据质控##
 HSMM <- detectGenes(HSMM, min_expr = 1)
 print(head(fData(HSMM)))
-#获取细胞表达量阈值的基因
+#获取细胞表达量阈值的基因(在10个细胞以上有表达）
 expressed_genes <- row.names(subset(fData(HSMM),
                                     num_cells_expressed >= 10))
 
 head(pData(HSMM))
 length(expressed_genes)
 
-#########选择输入的基因用于Ordering cells########
+##03 选择输入的基因用于Ordering cells##
 #（1）选择clusters差异表达基因（算法预测）；
 
 #（2）选择离散程度高的基因（例如Seurat的高变基因）；
@@ -104,7 +106,7 @@ length(unsup_clustering_genes$gene_id)
 HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
 plot_ordering_genes(HSMM)
 
-#########降维 & 排序#########
+##04降维 & 排序##
 HSMM <- reduceDimension(HSMM,
                         max_components = 2,
                         num_dim = 20,
