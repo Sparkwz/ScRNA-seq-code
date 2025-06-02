@@ -135,8 +135,14 @@ reg.csv \
 --num_workers $CORE
 ```
 - **报错解读**
-1.报错1：TypeError: Must supply at least one delayed object
-  - 解决措施：**numpy版本降至1.23.5后运行** `pip install numpy==1.23.5` **python版本调整** `pip install dask-expr==0.5.3 distributed==2024.2.1`
-2.报错2：AttributeError: 'Series' object has no attribute 'iteritems'
-  - 解决措施：**pandas版本调整** `pip install pandas==1.5.3`
+```
+报错1：TypeError: Must supply at least one delayed object
+解决措施：**numpy版本降至1.23.5后运行** `pip install numpy==1.23.5` **python版本调整** `pip install dask-expr==0.5.3 distributed==2024.2.1`
+报错2：AttributeError: 'Series' object has no attribute 'iteritems'
+解决措施：**pandas版本调整** `pip install pandas==1.5.3`
+```
 - **运行结果解读**
+- GRNBoost结果文件adj.sample.tsv: 基因调控网络邻接矩阵/描述了基因之间的调控关系，共三列，第1列为TF，第2列为target,第3列为importance,表示一个基因对的调控强度
+- RcisTatget结果文件reg.csv: 包含基因调控网络的上下游关系信息，其中列出了每个基因及其预测的上游和下游调控基因
+- AUCell打分结果文件out_SCENIC_loom：类似基于转录因子靶基因集的富集分析打分（细胞X转录因子表达矩阵）
+3. **AUCell输出文件可视化**
