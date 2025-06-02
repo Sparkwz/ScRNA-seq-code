@@ -45,14 +45,14 @@
  1. ssGSEA、GSVA和Z-score:常用于Bulk数据
  2. AUCell、VISION和AddModuleScore:常用于单细胞数据
 # 转录因子分析 SCENIC
-## SCENIC三步骤
+## 01 SCENIC三步骤
 ### First step
 - **GENIE3（随机森林)/GRNBoost (Gradient Boosting)** 推断转录因子与候选靶基因之间的共表达模块，每个模块包含一个转录因子及其靶基因，纯粹基于共表达
 ### Second step 
 - **RcisTatget** 分析每个共表达模块中的基因，以鉴定enriched motifs，仅保留TF motif富集的模块和targets，构建TF-targets网络，每个TF及其潜在的直接targets gene被称作一个调节因子（Regulons）；
 ### Third step 
 - **AUCell** 计算调节因子（Regulons）的活性，这将确定Regulon在哪些细胞中处于“打开”状态
-## SCENIC参考文件准备x3
+## 02 SCENIC参考文件准备x3
 ### 转录起始子信息：
 - hg38_10kbp_up_10kbp_down_full_tx_v10_clust.genes_vs_motifs.rankings.feather
 - hg38_500bp_up_100bp_down_full_tx_v10_clust.genes_vs_motifs.rankings.feather
@@ -60,7 +60,7 @@
 - allTFs_hg38.txt
 ### motif信息
 - motifs-v10nr_clust-nr.hgnc-m0.001-o0.0.tbl
-## SCENIC流程详细解释及报错解决方案
+## 03 SCENIC流程详细解释及报错解决方案
 1. **输出表达矩阵为CSV格式**
 ```library(Seurat)
 library(dplyr)
