@@ -1,3 +1,19 @@
+library(Seurat)
+library(dplyr)
+library(readr)
+###加载示例数据
+install.packages('~/Rpackages/pbmc3k.SeuratData_3.1.4.tar.gz', repos = NULL, type = "source")
+library(pbmc3k.SeuratData)	
+# 加载该数据集
+data("pbmc3k")
+# 查看数据
+pbmc3k = UpdateSeuratObject(pbmc3k)
+pbmc3k
+#注意矩阵一定要转置，不然会报错
+write.csv(t(as.matrix(pbmc3k@assays$RNA@counts)),file = "~/Spark/for.pyscenic.csv")
+write_rds(pbmc3k, file = "~/Spark/Step1.pySCENIC_test_seurat.rds")
+
+################可视化################
 rm(list=ls())
 library(Seurat)
 library(SCopeLoomR)
@@ -49,7 +65,7 @@ Idents(seurat.data) <- "seurat_annotations"
 options(repr.plot.width = 6, repr.plot.height = 4.5)
 DimPlot(seurat.data, reduction = "umap", label=T) 
 
-##把SCENIC的结果与seurat数据合并
+#####把SCENIC的结果与seurat数据合并####
 sub_regulonAUC <- regulonAUC[,match(colnames(seurat.data),colnames(regulonAUC))]
 #确认是否一致
 identical(colnames(sub_regulonAUC), colnames(seurat.data))
@@ -123,6 +139,22 @@ Heatmap(
   cluster_row_slices           = FALSE,
   cluster_columns              = FALSE)
 
+#热图查看TF分布：
+options(repr.plot.width = 4.5, repr.plot.height = 15)
+Heatmap(
+  regulonActivity_byGroup_Scaled,
+  name                         = "z-score",
+  col                          = colorRamp2(seq(from=-2,to=2,length=11),rev(brewer.pal(11, "Spectral"))),
+  show_row_names               = TRUE,
+  show_column_names            = TRUE,
+  row_names_gp                 = gpar(fontsize = 6),
+  clustering_method_rows = "ward.D2",
+  clustering_method_columns = "ward.D2",
+  row_title_rot                = 0,
+  cluster_rows                 = TRUE,
+  cluster_row_slices           = FALSE,
+  cluster_columns              = FALSE)
+
 ###rss查看特异TF
 #参考文章：The RSS was first used by Suo et al. in: Revealing the Critical Regulators of Cell Identity in the Mouse Cell Atlas. Cell Reports (2018). doi: 10.1016/j.celrep.2018.10.045
 rss <- calcRSS(AUC=getAUC(sub_regulonAUC), 
@@ -130,3 +162,64 @@ rss <- calcRSS(AUC=getAUC(sub_regulonAUC),
 rss=na.omit(rss) 
 rssPlot <- plotRSS(rss)
 plotly::ggplotly(rssPlot$plot&coord_flip())
+
+### 4.3 其他查看TF方式
+rss=regulonActivity_byGroup_Scaled
+head(rss)
+df = do.call(rbind,
+             lapply(1:ncol(rss), function(i){
+               dat = data.frame(
+                 path = rownames(rss),
+                 cluster = colnames(rss)[i],
+                 sd.1 = rss[,i],
+                 sd.2 = apply(rss[,-i], 1, median)  
+               )
+             }))
+df$fc = df$sd.1 - df$sd.2
+top5 <- df %>% group_by(cluster) %>% top_n(5, fc)
+rowcn = data.frame(path = top5$cluster) 
+n = rss[top5$path,] 
+#rownames(rowcn) = rownames(n)
+
+options(repr.plot.width = 4.5, repr.plot.height = 8)
+pheatmap(n,
+         annotation_row = rowcn,
+         show_rownames = T)
+
+#Rank图
+library(parallel)
+library(philentropy)
+library(ggrepel)
+library(latex2exp)
+### 5.1 读入RAS矩阵
+rasMat <- seurat.data@assays$scenic@counts %>% t() %>% as.data.frame()
+
+### 5.2 读入细胞类型矩阵
+cell.info <- seurat.data@meta.data
+cell.info$celltype <- seurat.data@meta.data$seurat_annotations
+
+cell.types <- names(table(cell.info$celltype))
+ctMat <- lapply(cell.types, function(i) {
+  as.numeric(cell.info$celltype == i)
+})
+ctMat <- do.call(cbind, ctMat)
+colnames(ctMat) <- cell.types
+rownames(ctMat) <- rownames(cell.info)
+head(ctMat)
+### 5.3 计算RSS矩阵(Regulon Specificity Score)
+options(ggrepel.max.overlaps = Inf)
+rssMat <- mclapply(colnames(rasMat), function(i) {
+  sapply(colnames(ctMat), function(j) {
+    1 - JSD(rbind(rasMat[, i], ctMat[, j]), unit = 'log2', est.prob = "empirical")
+  })
+}, mc.cores = 10)
+rssMat <- do.call(rbind, rssMat)
+rownames(rssMat) <- colnames(rasMat)
+colnames(rssMat) <- colnames(ctMat)
+p.rank = lapply(colnames(rssMat), function(ct){
+  PlotRegulonRank(rssMat, ct, topn = 5, front.size = 10, point.size = 1)
+})
+names(p.rank) = colnames(rssMat)
+
+options(repr.plot.width = 9, repr.plot.height = 9)
+wrap_plots(p.rank)

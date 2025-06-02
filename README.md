@@ -44,3 +44,114 @@
 - 评估单个样本/细胞中特定基因集的活性水平，可用于量化单个样本/细胞内的生物学特征或通路活性，使用基因表达量矩阵，结合已知基因集作用输入数据
  1. ssGSEA、GSVA和Z-score:常用于Bulk数据
  2. AUCell、VISION和AddModuleScore:常用于单细胞数据
+## 转录因子分析 SCENIC
+### 01 SCENIC三步骤
+#### First step
+- **GENIE3（随机森林)/GRNBoost (Gradient Boosting)** 推断转录因子与候选靶基因之间的共表达模块，每个模块包含一个转录因子及其靶基因，纯粹基于共表达
+#### Second step 
+- **RcisTatget** 分析每个共表达模块中的基因，以鉴定enriched motifs，仅保留TF motif富集的模块和targets，构建TF-targets网络，每个TF及其潜在的直接targets gene被称作一个调节因子（Regulons）；
+#### Third step 
+- **AUCell** 计算调节因子（Regulons）的活性，这将确定Regulon在哪些细胞中处于“打开”状态
+### 02 SCENIC参考文件准备x3
+#### 转录起始子信息：
+- hg38_10kbp_up_10kbp_down_full_tx_v10_clust.genes_vs_motifs.rankings.feather
+- hg38_500bp_up_100bp_down_full_tx_v10_clust.genes_vs_motifs.rankings.feather
+#### 转录因子信息
+- allTFs_hg38.txt
+#### motif信息
+- motifs-v10nr_clust-nr.hgnc-m0.001-o0.0.tbl
+### 03 SCENIC流程详细解释及报错解决方案
+1. **输出表达矩阵为CSV格式**
+```library(Seurat)
+library(dplyr)
+library(readr)
+###加载示例数据
+install.packages('~/Rpackages/pbmc3k.SeuratData_3.1.4.tar.gz', repos = NULL, type = "source")
+library(pbmc3k.SeuratData)	
+# 加载该数据集
+data("pbmc3k")
+# 查看数据
+pbmc3k = UpdateSeuratObject(pbmc3k)
+pbmc3k
+#注意矩阵一定要转置，不然会报错
+write.csv(t(as.matrix(pbmc3k@assays$RNA@counts)),file = "~/Spark/for.pyscenic.csv")
+write_rds(pbmc3k, file = "~/Spark/Step1.pySCENIC_test_seurat.rds")
+```
+2. **pySCENIC**
+- **创建文件目录，目录下包含（1.change.py 2.scenic_human.bash 3.SCENIC参考文件(转录起始子/转录因子/motif) 4.for.pyscenic.csv）**
+- **change.py详细信息**
+```
+import os,sys
+os.getcwd()
+os.listdir(os.getcwd()) 
+
+import loompy as lp;
+import numpy as np;
+import scanpy as sc;
+x=sc.read_csv("for.pyscenic.csv");
+row_attrs = {"Gene": np.array(x.var_names),};
+col_attrs = {"CellID": np.array(x.obs_names)};
+lp.create("sample.loom",x.X.transpose(),row_attrs,col_attrs);
+```
+- **scenic_human.bash详细信息**
+```
+### Step1.运行change.py
+python change.py
+### Step2.设置路径
+# 不同物种的数据库不一样，这里是人类是human 
+dir=/home/iyun42/Scenic #改成自己的目录
+tfs=$dir/allTFs_hg38.txt
+feather=$dir/hg38_10kbp_up_10kbp_down_full_tx_v10_clust.genes_vs_motifs.rankings.feather
+tbl=$dir/motifs-v10nr_clust-nr.hgnc-m0.001-o0.0.tbl
+# 一定要保证上面的数据库文件完整无误哦 
+input_loom=./sample.loom
+ls $tfs  $feather  $tbl  
+CORE=10
+
+### Step3.运行pySCENIC
+#3.1 grn
+pyscenic grn \
+--num_workers $CORE \
+--output adj.sample.tsv \
+--method grnboost2 \
+sample.loom \
+$tfs #转录因子文件，human or mouse
+
+#3.2 cistarget
+pyscenic ctx \
+adj.sample.tsv $feather \
+--annotations_fname $tbl \
+--expression_mtx_fname $input_loom  \
+--mode "dask_multiprocessing" \
+--output reg.csv \
+--num_workers $CORE  \
+--mask_dropouts
+
+#3.3 AUCell
+pyscenic aucell \
+$input_loom \
+reg.csv \
+--output out_SCENIC.loom \
+--num_workers $CORE
+```
+- **报错解读**
+```
+报错1：TypeError: Must supply at least one delayed object
+解决措施：**numpy版本降至1.23.5后运行** `pip install numpy==1.23.5` **python版本调整** `pip install dask-expr==0.5.3 distributed==2024.2.1`
+报错2：AttributeError: 'Series' object has no attribute 'iteritems'
+解决措施：**pandas版本调整** `pip install pandas==1.5.3`
+```
+- **运行结果解读**
+- GRNBoost结果文件adj.sample.tsv: 基因调控网络邻接矩阵/描述了基因之间的调控关系，共三列，第1列为TF，第2列为target,第3列为importance,表示一个基因对的调控强度
+- RcisTatget结果文件reg.csv: 包含基因调控网络的上下游关系信息，其中列出了每个基因及其预测的上游和下游调控基因
+- AUCell打分结果文件out_SCENIC_loom：类似基于转录因子靶基因集的富集分析打分（细胞X转录因子表达矩阵）
+3. **AUCell输出文件可视化**
+## 拟时序分析 Monocle2
+### 基本概念及流程
+- 用于分析单细胞转录组数据的方法，旨在推断细胞在发育或分化过程中的顺序
+- 基于反向图嵌入学习单细胞轨迹，分为5个步骤
+1. 构建monocle2数据对象（cds对象）
+2. 数据过滤（QC）
+3. 基于离散型基因进行降维聚类
+4. 构建拟时序轨迹
+5. 可视化
