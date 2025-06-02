@@ -112,6 +112,7 @@ p.kegg
 #GSEA需要所有的基因，然后基于foldchange排序
 ##计算所有的差异基因
 Idents(seurat.data) = "celltype"
+#纳入所有基因，only.pos只保留正表达选F，Logfc选最小
 ct.marker.all <- FindAllMarkers(object = seurat.data, 
                                 only.pos = F,
                                 min.pct = 0.01,
@@ -121,7 +122,7 @@ table(ct.marker.all$cluster)
 str(ct.marker.all)
 save(ct.marker.all,
      file = "~/Spark/Step6.celltype.markers.for_GSEA.Rdata")
-
+#load(file = "~/Spark/Step6.celltype.markers.for_GSEA.Rdata")
 ##根据avg_log2FC排序
 sce.list = lapply(split(ct.marker.all,ct.marker.all$cluster), function(x){
   tpm = x
@@ -154,7 +155,7 @@ options(repr.plot.width = 30, repr.plot.height = 8)
 p.gsea = wrap_plots(plotlist=GSEAplot, ncol= 5)
 p.gsea
 
-##单细胞可视化
+##单个细胞前20通路可视化
 options(repr.plot.width = 6, repr.plot.height = 4.5)
 enrichplot::dotplot(GSEA_analy[["T cycling"]], 
                     showCategory = 20,
@@ -162,7 +163,7 @@ enrichplot::dotplot(GSEA_analy[["T cycling"]],
   ggtitle("GSEA (T cycling)") + 
   theme(plot.title = element_text(color="black",hjust = 0.5))
 
-##单细胞单通路可视化
+##单个细胞单通路可视化
 options(repr.plot.width = 5, repr.plot.height = 5)
 gseaplot2(GSEA_analy[["T cycling"]], 
           geneSetID = 'G2M_CHECKPOINT',
@@ -201,21 +202,22 @@ p.gsea = ggplot(gseaTab, aes(x=celltype,y=term)) +
 p.gsea
 head(gseaTab)
 
-############AUCell############
+#####AUCell#####
+#assay.names与assay需要统一
 seurat.data <- sc.Pathway.Seurat(obj = seurat.data, 
                                  method = "AUCell", #可选方法："AUCell", "VISION", "ssGSEA","gsva"，单细胞推荐使用AUCell
                                  ncores = 4,
                                  assay.names = "pathway",
                                  geneList = "~/Spark/R/h.all.v7.2.symbols.gmt")
 seurat.data
-##小提琴图可视化
+##小提琴图指定通路可视化
 options(repr.plot.width = 6, repr.plot.height = 5)
 VlnPlot_2(seurat.data, 
           features = c("HALLMARK-G2M-CHECKPOINT"),
           assay = "pathway", 
           y.lab = "Pathway enrichemnt score (AUCell)")
 
-##featureplot可视化
+##featureplot通路UMAP图可视化
 options(repr.plot.width = 5, repr.plot.height = 4.5)
 FeaturePlot(seurat.data, features = c("HALLMARK-P53-PATHWAY"))&
   scale_color_distiller(palette = 'RdBu')
