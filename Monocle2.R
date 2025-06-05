@@ -8,19 +8,21 @@ library(ggpubr)
 library(pbmc3k.SeuratData)	#加载seurat数据集 
 
 #InstallData("pbmc3k") 
-data("pbmc3k")  
+data("pbmc3k")
+#提取注释后seurat对象
 seurat.data <- pbmc3k.final
 seurat.data
-
 options(repr.plot.width = 6, repr.plot.height = 4.5)
 DimPlot(seurat.data, reduction = "umap", label=T) 
+#提取纳入拟时序分析细胞类型
 seurat.data$celltype = Idents(seurat.data)
+#需要严格选择具有分化关系的细胞进行分析，不随意All in
 sce = subset(seurat.data, celltype %in% c('CD14+ Mono','FCGR3A+ Mono'))
 table(Idents(sce))
 sce <- NormalizeData(sce) %>%
   FindVariableFeatures(selection.method = "vst", nfeatures = 2000)
 
-#1 Seurat转为Monocle2 cds数据
+#1 标准Seurat转为Monocle2 cds数据
 HSMM <- as.CellDataSet(sce)
 HSMM
 
@@ -69,7 +71,7 @@ expressed_genes <- row.names(subset(fData(HSMM),
 head(pData(HSMM))
 length(expressed_genes)
 
-##03 选择输入的基因用于Ordering cells##
+##03 选择输入的基因用于降维聚类##
 #（1）选择clusters差异表达基因（算法预测）；
 
 #（2）选择离散程度高的基因（例如Seurat的高变基因）；
@@ -106,7 +108,7 @@ length(unsup_clustering_genes$gene_id)
 HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
 plot_ordering_genes(HSMM)
 
-##04降维 & 排序##
+##04 降维 & 排序##
 HSMM <- reduceDimension(HSMM,
                         max_components = 2,
                         num_dim = 20,
@@ -115,7 +117,7 @@ HSMM <- reduceDimension(HSMM,
 HSMM <- orderCells(HSMM)
 pData(HSMM) %>% head()
 
-##ordering cells by assigning root nodes识别细胞轨迹的起点和终点
+##05 构建拟时序轨迹（识别细胞轨迹的起点和终点）##
 GM_state <- function(cds, starting_point, cluster){
   if (length(unique(cds$State)) > 1){
     T0_counts <- table(cds$State, cds@phenoData@data[,cluster])[,starting_point]
@@ -129,7 +131,7 @@ root_start = GM_state(cds = HSMM,starting_point = "CD14+ Mono",cluster = "cellty
 root_start
 HSMM <- monocle::orderCells(HSMM, root_state = root_start)
 
-##可视化
+##06 可视化##
 #配色
 colour=c("#DC143C","#0000FF","#20B2AA","#FFA500","#9370DB","#98FB98","#F08080","#1E90FF","#7CFC00","#FFFF00",
          "#808000","#FF00FF","#FA8072","#7B68EE","#9400D3","#800080","#A0522D","#D2B48C","#D2691E","#87CEEB","#40E0D0","#5F9EA0",
@@ -264,7 +266,7 @@ ggplot(input.data, aes(x = Pseudotime, y = test_pathway)) +
   ggfun::facet_set(label = "Test pathway")+
   mytheme + theme(legend.position = "none")
 
-#感兴趣基因热图
+##感兴趣基因热图
 input.gene <- c("LGALS2", "FCGR3A", "S100A9", "CCL3", "CD14", "LYZ", "FOLR3", "ECHDC1", "S100A8")
 options(repr.plot.width = 6, repr.plot.height = 4)
 plot_pseudotime_heatmap(HSMM[input.gene,], 
