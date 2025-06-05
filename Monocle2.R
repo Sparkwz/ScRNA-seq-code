@@ -27,7 +27,7 @@ HSMM <- as.CellDataSet(sce)
 HSMM
 
 #2 如果是其他格式的数据，需要自行构建cds格式
-#2.1 表型数据（sample id/celltype)
+{#2.1 表型数据（sample id/celltype)
 sample_ann <- sce@meta.data  
 head(sample_ann)
 
@@ -54,7 +54,7 @@ HSMM2 <- newCellDataSet(
   expressionFamily = negbinomial.size(),
   lowerDetectionLimit=1)
 HSMM2
-
+}
 #########运行Monocle2########
 ##01 Estimate size factor##
 HSMM <- estimateSizeFactors(HSMM)
