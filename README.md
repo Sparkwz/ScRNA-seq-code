@@ -179,8 +179,16 @@ reg.csv \
 1. 基于单细胞数据构建inferCNV对象
 2. `infercnv::run()`函数一键运行
 3. 个性化分析和可视化
-## 单细胞联合Bulk反卷积 CibersortX/BayesPrism/Music
--单细胞数据：提供丰富的细胞亚群注释信息，但样本量小，缺乏详细的临床信息
--Bulk数据：TCGA的Bulk数据有大样本表达矩阵和丰富的临床信息如生存信息
-1. **思路一**： 基于单细胞细胞类型注释数据推断Bulk样本细胞类型含量，用于后续个性化分析（以Bulk数据为重心）PMID 36706185/35365629
-2. **思路二**：使用单细胞数据联合Bulk表型分析（scAB+Scissor算法，以单细胞数据为重心）
+## 使用单细胞数据联合Bulk表型分析（ScAB/Scissor算法）
+- 参考文献：PMID 37652986/PMID: 36368318
+## ScAB(报错）
+- step 1 输入数据包括1.单细胞数据（scATAC-seq/scRNA-seq),其次是2.对应组织的Bulk RNA-seq数据，以及3.表型数据
+- step 2 scAB基于单细胞和Bulk RNA-seq数据计算单个细胞和Bulk样本之间的成对的Pearson相关性，生成相似性矩阵
+- step 3 利用NMF算法识别与表型相关细胞
+## Scissor
+- step 1 输入数据包括1.单细胞数据（scATAC-seq/scRNA-seq),其次是2.对应组织的Bulk RNA-seq数据，以及3.表型数据
+- step 2 计算每对细胞和bulk样本的Pearson相关系数构建相关系数矩阵，通过优化样本表型Y与相关矩阵S的回归模型
+- step 3 由上述优化模型求解的非零系数β用于选择与目标表型相关的细胞亚群。其中Scissor+表示所选择的细胞与目标表型呈正相关，Scissor为负相关。
+- step 4 可靠性检验+差异表达基因分析+功能富集分析+motif分析
+- 
+
