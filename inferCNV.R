@@ -12,7 +12,7 @@ library(pheatmap)
 
 outdir = "~/Spark/inferCNV/"
 dir.create(outdir)
-### 1. 数据入读
+### 1. 数据读入
 seurat.data = read_rds("~/Spark/test_for_inverCNV.rds")
 table(seurat.data$celltype)
 seurat.data
@@ -298,6 +298,7 @@ names(color_v)=paste0('C',1:5)
 left_anno <- rowAnnotation(df = kmeans_df_s,col=list(class=c("tumor"="red","normal" = "blue"),Cluster=color_v))
 
 pdf("~/Spark/inferCNV/Step6.CNV-kmeans-heatmap.pdf",width = 20,height = 20)
+##报错未解决
 ht = Heatmap(t(expr)[rownames(kmeans_df_s),], #绘图数据的CB顺序和注释CB顺序保持一致
              col = colorRamp2(c(0.4,1,1.6), c("#377EB8","#F0F0F0","#E41A1C")), #如果是10x的数据，这里的刻度会有所变化
              cluster_rows = F,cluster_columns = F,show_column_names = F,show_row_names = F,
