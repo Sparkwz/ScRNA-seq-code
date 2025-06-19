@@ -181,12 +181,17 @@ reg.csv \
 3. 个性化分析和可视化
 ## 使用单细胞数据联合Bulk表型分析（ScAB/Scissor算法）
 - 参考文献：PMID 37652986/PMID: 36368318
-## Scissor
+### Scissor
 - step 1 输入数据包括1.单细胞数据（scATAC-seq/scRNA-seq),其次是2.对应组织的Bulk RNA-seq数据，以及3.表型数据
 - step 2 计算每对细胞和bulk样本的Pearson相关系数构建相关系数矩阵，通过优化样本表型Y与相关矩阵S的回归模型
 - step 3 由上述优化模型求解的非零系数β用于选择与目标表型相关的细胞亚群。其中Scissor+表示所选择的细胞与目标表型呈正相关，Scissor为负相关。
 - step 4 可靠性检验+差异表达基因分析+功能富集分析+motif分析
 - 报错解决方案`Error in preprocessCore::normalize.quantiles(Y) :   ERROR; return code from pthread_create() is 22`: 本地运行`normalize.quantiles`后传输中间文件
+## CellTrek
+scRNA-seq测序有丰富的细胞类型和基因表达量信息，但是缺乏基因表达的空间位置信息，无法了解基因在组织中的位置，会遗漏细胞间相互作用等关键生物学信息
+- step 1 准备单细胞数据及空间转录组数据
+- step 2 使用CellTrek进行细胞映射
+- step 3 可视化分析
 
 
 
