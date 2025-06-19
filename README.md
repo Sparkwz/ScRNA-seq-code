@@ -181,13 +181,12 @@ reg.csv \
 3. 个性化分析和可视化
 ## 使用单细胞数据联合Bulk表型分析（ScAB/Scissor算法）
 - 参考文献：PMID 37652986/PMID: 36368318
-## ScAB(报错）
-- step 1 输入数据包括1.单细胞数据（scATAC-seq/scRNA-seq),其次是2.对应组织的Bulk RNA-seq数据，以及3.表型数据
-- step 2 scAB基于单细胞和Bulk RNA-seq数据计算单个细胞和Bulk样本之间的成对的Pearson相关性，生成相似性矩阵
-- step 3 利用NMF算法识别与表型相关细胞
 ## Scissor
 - step 1 输入数据包括1.单细胞数据（scATAC-seq/scRNA-seq),其次是2.对应组织的Bulk RNA-seq数据，以及3.表型数据
 - step 2 计算每对细胞和bulk样本的Pearson相关系数构建相关系数矩阵，通过优化样本表型Y与相关矩阵S的回归模型
 - step 3 由上述优化模型求解的非零系数β用于选择与目标表型相关的细胞亚群。其中Scissor+表示所选择的细胞与目标表型呈正相关，Scissor为负相关。
 - step 4 可靠性检验+差异表达基因分析+功能富集分析+motif分析
+- 报错解决方案`Error in preprocessCore::normalize.quantiles(Y) :   ERROR; return code from pthread_create() is 22`: 本地运行`normalize.quantiles`后传输中间文件
+
+
 
