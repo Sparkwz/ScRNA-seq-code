@@ -1,4 +1,23 @@
 # 单细胞数据分析学习笔记
+## 上游分析
+### 数据下载 
+### 数据转换处理
+1. 修改样本名称
+```
+#确认文件存在
+ls *.fastq.gz       # 查看当前目录下的fastq.gz文件
+cat SRR_ACC_List.txt  # 查看SRR列表文件内容
+#执行重命名命令
+while IFS= read -r i; do
+    mv -v "${i}_1"*.fastq.gz "${i}_S1_L001_R1_001.fastq.gz"
+    mv -v "${i}_2"*.fastq.gz "${i}_S1_L001_R2_001.fastq.gz"
+done < SRR_ACC_List.txt
+```
+2. 下载cellranger
+```
+#下载cellranger
+curl -o cellranger-9.0.1.tar.gz "https://cf.10xgenomics.com/releases/cell-exp/cellranger-9.0.1.tar.gz?Expires=1752260309&Key-Pair-Id=APKAI7S6A5RYOXBWRPDA&Signature=BdJZmx4rS~yKbvI5RmENSGIMNQeY5sJZSdhPVpIDH~vkDBA0130Ih~ph-Rq~VtNLd2nu41Aifh1v1RkBT-Snrb9BFWU~57oRf7jyn6vYJperQwUzKyQOSxCtvdEu3EfdKM~MMxuKCDfI-tsGOD0D4NpWamjtfSH5OZ3e6q2LB8n2FXTyuvzxj1ps~ueKpEfTK2UyVUIDIhnWQGZhfcLj-x29pYWlZ5T73N3RCTNmXEbqClg5PghYrNtFS2pCb9rS64kkSg5lA6wNXghINoRg~2ZQ82cxQGyUALOhHMX7zTlNPlXe4t7Kzai7VruClbHLXkI7f569b-WNxQOHj6B7dw__"
+```
 ## 基础处理 Basic analysis
 ### 数据储存格式
 - Seurat官网示例数据
