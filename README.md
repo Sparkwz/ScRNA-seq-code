@@ -1,5 +1,5 @@
 # 单细胞数据分析学习笔记
-## 上游分析
+## Kingfisher数据下载及Cellranger上游分析
 ### 数据下载 
 ### 数据转换处理
 1. 修改样本名称
@@ -24,6 +24,41 @@ tar -zxvf cellranger-9.0.1.tar.gz
 ```
 curl -O "https://cf.10xgenomics.com/supp/cell-exp/refdata-gex-GRCh38-2024-A.tar.gz"
 tar -zxvf refdata-gex-GRCh38-2024-A.tar.gz
+```
+4. cellranger运行
+```
+# 临时添加到PATH
+export PATH=/home/spark/cellranger-9.0.1/bin:$PATH
+# 确认是否添加成功
+which cellranger
+# 创建新文件夹并移动SRR文件至文件夹
+mkdir merged_SRR
+#生成sample样本文件
+ls *.fastq.gz | cut -d'_' -f1 | sort -u > samples.txt
+# 设置参考路径
+# 设定参考基因组
+ref="/home/spark/refdata-gex-GRCh38-2024-A"
+# 设定fastq文件路径
+fastqs="/home/spark/merged_SRR"
+# 运行cellranger
+while read sample_id; do
+    echo "Processing sample: $sample_id"
+    
+    nohup cellranger count \
+        --id="$sample_id" \
+        --transcriptome="$ref" \
+        --fastqs="$fastqs" \
+        --sample="$sample_id" \
+        --create-bam=true \
+        --nosecondary \
+        --localcores=4 \
+        --localmem=30 \
+        > "${sample_id}.log" 2>&1 &
+    
+    echo "Submitted $sample_id, log: ${sample_id}.log"
+done < samples.txt
+# 查看运行进度
+jobs -l
 ```
 
 ## 基础处理 Basic analysis
