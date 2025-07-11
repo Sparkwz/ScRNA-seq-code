@@ -16,8 +16,16 @@ done < SRR_ACC_List.txt
 2. 下载cellranger
 ```
 #下载cellranger
+#https://www.10xgenomics.com/support/software/cell-ranger/downloads
 curl -o cellranger-9.0.1.tar.gz "https://cf.10xgenomics.com/releases/cell-exp/cellranger-9.0.1.tar.gz?Expires=1752260309&Key-Pair-Id=APKAI7S6A5RYOXBWRPDA&Signature=BdJZmx4rS~yKbvI5RmENSGIMNQeY5sJZSdhPVpIDH~vkDBA0130Ih~ph-Rq~VtNLd2nu41Aifh1v1RkBT-Snrb9BFWU~57oRf7jyn6vYJperQwUzKyQOSxCtvdEu3EfdKM~MMxuKCDfI-tsGOD0D4NpWamjtfSH5OZ3e6q2LB8n2FXTyuvzxj1ps~ueKpEfTK2UyVUIDIhnWQGZhfcLj-x29pYWlZ5T73N3RCTNmXEbqClg5PghYrNtFS2pCb9rS64kkSg5lA6wNXghINoRg~2ZQ82cxQGyUALOhHMX7zTlNPlXe4t7Kzai7VruClbHLXkI7f569b-WNxQOHj6B7dw__"
+tar -zxvf cellranger-9.0.1.tar.gz
 ```
+3. 下载人的参考基因组数据refdata文件
+```
+curl -O "https://cf.10xgenomics.com/supp/cell-exp/refdata-gex-GRCh38-2024-A.tar.gz"
+tar -zxvf refdata-gex-GRCh38-2024-A.tar.gz
+```
+
 ## 基础处理 Basic analysis
 ### 数据储存格式
 - Seurat官网示例数据
