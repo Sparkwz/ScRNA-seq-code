@@ -115,6 +115,26 @@ jobs -l
 - 前列腺癌与乳腺癌类似：即上皮细胞可分为管腔和基底细胞，管腔细胞一般为恶性肿瘤细胞，基底细胞为正常上皮细胞
 - 上皮、髓质、T细胞、B细胞、肥大细胞和基质细胞谱系相似性低，一般UMAP图可见泾渭分明
 - T细胞中，一般按照CD4T、CD8T、NKT和NK细胞依次排列，其中CD8T与NK/T细胞谱系更为接近
+### 06 认识Seurat对象数据结构
+- **assays** 用于存储不同模态或不同分析阶段的数据
+  - **RNA**
+     - **layers**
+        - **counts** 原始UMI计数矩阵（稀疏矩阵格式）`pbmc[["RNA"]]$counts`
+        - **data** NormalizeData()归一化后表达矩阵 `pbmc[["RNA"]]$data`
+          - **scale.data** ScaleData()标准化矩阵 `pbmc[["RNA"]]$scale.data[c(1:4),c(1:4)]`
+        - **meta.data** FindVariableFeatures()储存高变基因
+- **meta.data** 存储每个细胞的元数据，用于质控，注释及可视化
+  - **nFeature_RNA**：每个细胞检测到的基因数
+  - **nCount_RNA**：每个细胞总UMI数
+  - **percent.mt**：线粒体基因百分比
+  - **seurat_clusters**：细胞聚类的结果
+  - **orig.ident**：样本来源标识（如不同样本或批次）
+- **active.ident** 默认分组信息
+- **reductions** 用于存储降维结果
+  - **pca** 运行RunPCA后reductions存储PCA的降维结果
+  - **umap** UMAP降维
+  - **t-SNE** t-SNE降维
+
 ## 富集分析 Enrichment analysis
 ### 01 基于TOP差异基因的富集分析（GO/KEGG）
 - 使用**TOP差异基因**作为输入数据，得到富集分析结果
