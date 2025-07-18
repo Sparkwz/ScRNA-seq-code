@@ -1,5 +1,5 @@
 # 单细胞数据分析学习笔记
-## Kingfisher数据下载及Cellranger上游分析
+## 原始测序数据下载及Cellranger上游分析
 ### 数据下载 
 1. SRA网站获取SRR_Acc_List.txt  [link](https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA662018&o=acc_s%3Aa)
 2. Linux环境安装Kingfisher
