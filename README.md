@@ -70,7 +70,7 @@ jobs -l
 - **数据处理准则**
  1. 标准三件套：第一步重命名文件，第二步`list.files`+`lappy`循环（`Read10X()`+`CreateSeuratObject()`）读取
  2. 非标准格式：`CreateSeuratObject()`读取
-### 01 数据读入
+### 01 数据读入 Data input
 - `Read10X()` 读入10X标准格式为稀疏矩阵
 - `CreateSeuratObject()` 构建Seurat对象
 - `merge()` 合并多个样本
