@@ -125,7 +125,12 @@ seurat.data <- seurat.data %>% NormalizeData(verbose = F) %>%
   FindVariableFeatures(selection.method = "vst", nfeatures = 2000, verbose = F) %>% 
   ScaleData(verbose = F)
 seurat.data
-
+###查看前10个高变基因
+top10 <- head(VariableFeatures(seurat.data), 10) 
+### 将高变基因可视化
+plot1 <- VariableFeaturePlot(seurat.data,cols = c("black", "#c376a7")) 
+plot2 <- LabelPoints(plot = plot1, points = top10,repel = TRUE, size=4) 
+plot 
 ##降维和聚类，检查批次
 ###降维聚类(PCA+UMAP)
 seurat.data = seurat.data %>% 
