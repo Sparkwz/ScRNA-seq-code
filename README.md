@@ -1,6 +1,23 @@
 # 单细胞数据分析学习笔记
 ## Kingfisher数据下载及Cellranger上游分析
 ### 数据下载 
+1. https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA662018&o=acc_s%3Aa SRA网站获取SRR_Acc_List.txt
+```
+conda create -n kingfisher python=3.8
+conda activate kingfisher
+conda install -c bioconda kingfisher
+```
+3. Kingfisher多种形式下载（从ENA下载，意味着直接下载的是 FASTQ文件
+```
+#下载整个Bioproject
+kingfisher get -p PRJNA486534 -m ena-ascp ena-ftp prefetch aws-http 1>down_prjan486534.log 2>&1
+
+##下载单个样本
+kingfisher get -r SRR14615558 -m ena-ascp ena-ftp prefetch aws-http --download-threads 10  1>down.log 2>&1
+
+##下载多个样本
+kingfisher get --run-identifiers-list SRR_Acc_List.txt -m ena-ascp ena-ftp prefetch --download-threads 10 --check-md5sums 1>down_srr_list.log 2>&1
+```
 ### 数据上游分析
 1. 修改样本名称
 ```
