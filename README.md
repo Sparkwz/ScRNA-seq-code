@@ -1,4 +1,66 @@
 # 单细胞数据分析学习笔记
+## Kingfisher数据下载及Cellranger上游分析
+### 数据下载 
+### 数据上游分析
+1. 修改样本名称
+```
+#确认文件存在
+ls *.fastq.gz       # 查看当前目录下的fastq.gz文件
+cat SRR_ACC_List.txt  # 查看SRR列表文件内容
+#执行重命名命令
+while IFS= read -r i; do
+    mv -v "${i}_1"*.fastq.gz "${i}_S1_L001_R1_001.fastq.gz"
+    mv -v "${i}_2"*.fastq.gz "${i}_S1_L001_R2_001.fastq.gz"
+done < SRR_ACC_List.txt
+```
+2. 下载cellranger
+```
+#下载cellranger
+#https://www.10xgenomics.com/support/software/cell-ranger/downloads
+curl -o cellranger-9.0.1.tar.gz "https://cf.10xgenomics.com/releases/cell-exp/cellranger-9.0.1.tar.gz?Expires=1752260309&Key-Pair-Id=APKAI7S6A5RYOXBWRPDA&Signature=BdJZmx4rS~yKbvI5RmENSGIMNQeY5sJZSdhPVpIDH~vkDBA0130Ih~ph-Rq~VtNLd2nu41Aifh1v1RkBT-Snrb9BFWU~57oRf7jyn6vYJperQwUzKyQOSxCtvdEu3EfdKM~MMxuKCDfI-tsGOD0D4NpWamjtfSH5OZ3e6q2LB8n2FXTyuvzxj1ps~ueKpEfTK2UyVUIDIhnWQGZhfcLj-x29pYWlZ5T73N3RCTNmXEbqClg5PghYrNtFS2pCb9rS64kkSg5lA6wNXghINoRg~2ZQ82cxQGyUALOhHMX7zTlNPlXe4t7Kzai7VruClbHLXkI7f569b-WNxQOHj6B7dw__"
+tar -zxvf cellranger-9.0.1.tar.gz
+```
+3. 下载人的参考基因组数据refdata文件
+```
+curl -O "https://cf.10xgenomics.com/supp/cell-exp/refdata-gex-GRCh38-2024-A.tar.gz"
+tar -zxvf refdata-gex-GRCh38-2024-A.tar.gz
+```
+4. cellranger运行
+```
+# 临时添加到PATH
+export PATH=/home/spark/cellranger-9.0.1/bin:$PATH
+# 确认是否添加成功
+which cellranger
+# 创建新文件夹并移动SRR文件至文件夹
+mkdir merged_SRR
+#生成sample样本文件
+ls *.fastq.gz | cut -d'_' -f1 | sort -u > samples.txt
+# 设置参考路径
+# 设定参考基因组
+ref="/home/spark/refdata-gex-GRCh38-2024-A"
+# 设定fastq文件路径
+fastqs="/home/spark/merged_SRR"
+# 运行cellranger
+while read sample_id; do
+    echo "Processing sample: $sample_id"
+    
+    nohup cellranger count \
+        --id="$sample_id" \
+        --transcriptome="$ref" \
+        --fastqs="$fastqs" \
+        --sample="$sample_id" \
+        --create-bam=true \
+        --nosecondary \
+        --localcores=4 \
+        --localmem=30 \
+        > "${sample_id}.log" 2>&1 &
+    
+    echo "Submitted $sample_id, log: ${sample_id}.log"
+done < samples.txt
+# 查看运行进度
+jobs -l
+```
+
 ## 基础处理 Basic analysis
 ### 数据储存格式
 - Seurat官网示例数据
@@ -186,12 +248,21 @@ reg.csv \
 - step 2 计算每对细胞和bulk样本的Pearson相关系数构建相关系数矩阵，通过优化样本表型Y与相关矩阵S的回归模型
 - step 3 由上述优化模型求解的非零系数β用于选择与目标表型相关的细胞亚群。其中Scissor+表示所选择的细胞与目标表型呈正相关，Scissor为负相关。
 - step 4 可靠性检验+差异表达基因分析+功能富集分析+motif分析
-- 报错解决方案`Error in preprocessCore::normalize.quantiles(Y) :   ERROR; return code from pthread_create() is 22`: 本地运行`normalize.quantiles`后传输中间文件
-## CellTrek
+- **报错解决方案** `Error in preprocessCore::normalize.quantiles(Y) :   ERROR; return code from pthread_create() is 22`: 本地运行`normalize.quantiles`后传输中间文件
+### CellTrek
 scRNA-seq测序有丰富的细胞类型和基因表达量信息，但是缺乏基因表达的空间位置信息，无法了解基因在组织中的位置，会遗漏细胞间相互作用等关键生物学信息
 - step 1 准备单细胞数据及空间转录组数据
 - step 2 使用CellTrek进行细胞映射
 - step 3 可视化分析
-
+## 问题合辑
+### 如何判断多样本或多队列单细胞数据整合分析时是否要去除批次效应？
+- **`Batch.Quant`函数**计算Z-score评分，**输入数据**为前期经过质控并批次校正整合后的Seurat对象，其中包括原始矩阵对象和校正后矩阵的对象。若Z-score大于1.96（p=0.05)表明细胞与同数据集的其他细胞显著重叠，即批次效应显著
+### 细胞亚群被划分为多少类是相对合适的，即Resolution参数选择多少合适？
+- 在运行FingClusters函数时，选取不同的resolution，**以迭代地增加已识别的簇的数量**，并用FindAllMarkers分别提取不同resolution下各簇的特征基因，统计最少特征基因数量，当某簇特征基因极少时，反映该簇转录特征并不显著，可能是被强行分出的一类细胞簇，提示Resolution值过大。
+### 细胞注释后如何验证注释结果的可靠性？
+1. 展示细胞特异性标记基因的表达情况
+2. 构建细胞特异性Signature,通过AddModuleScore打分评估细胞群的表达模式是否接近所注释细胞类型
+3. 根据已注释细胞的分布情况来判断
+### 单细胞如何与Bulk数据联合分析来挖掘临床意义？
 
 
