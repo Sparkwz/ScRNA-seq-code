@@ -7,24 +7,27 @@ library(dplyr)
 library(aplot)
 library(ggplotify)
 library(readr)
+devtools::install_github('immunogenomics/presto')
+library(presto)
 ##############Step1. 构建cellchat对象##############
+setwd("~/Spark/Cellchat")
 ## 1.1 读入数据
 data("pbmc3k")  
 pbmc3k= UpdateSeuratObject(object = pbmc3k)
-
 ## 1.2 构建cellchat对象
 #pbmc3k里的seurat_annotations有一些NA注释，过滤掉
-data.input = pbmc3k@assays$RNA@data
-meta.data =  pbmc3k@meta.data
+data.input = pbmc3k@assays$RNA@data  #NormalizeData()归一化后表达矩阵
+meta.data =  pbmc3k@meta.data  #存储每个细胞的元数据，用于质控，注释及可视化
 meta.data = meta.data[!is.na(meta.data$seurat_annotations),]
 data.input = data.input[,row.names(meta.data)]
-
+table(meta.data$seurat_annotations)
 #设置因子水平
+#levels输入所有的seurat_annotations细胞类型
 meta.data$seurat_annotations = factor(meta.data$seurat_annotations,
                                       levels = c("Naive CD4 T", "Memory CD4 T", "CD14+ Mono", "B", "CD8 T", 
                                                  "FCGR3A+ Mono", "NK", "DC", "Platelet"))
-
-### 1.3 Create a CellChat object
+class(meta.data$seurat_annotations)
+### 1.3 Create a CellChat object Step1. 构建CellChat对象
 cellchat <- createCellChat(object = data.input, 
                            meta = meta.data, 
                            group.by = "seurat_annotations")
@@ -41,8 +44,9 @@ levels(cellchat@idents) # show factor levels of the cell labels
 
 ##############Step2. 加载CellChatDB数据库##############
 ### 1.4 加载CellChat受配体数据库
-CellChatDB <- CellChatDB.human #use CellChatDB.mouse if running on mouse data
+CellChatDB <- CellChatDB.human #保证受配体数据库正确，此处为human
 showDatabaseCategory(CellChatDB)
+dev.off()
 # Show the structure of the database
 dplyr::glimpse(CellChatDB$interaction)
 # use a subset of CellChatDB for cell-cell communication analysis
@@ -56,7 +60,7 @@ cellchat@DB <- CellChatDB.use
 cellchat <- subsetData(cellchat) # This step is necessary even if using the whole database
 future::plan("multisession", workers = 2) # do parallel
 
-cellchat <- identifyOverExpressedGenes(cellchat) #01 识别高表达基因
+cellchat <- identifyOverExpressedGenes(cellchat)        #01 识别高表达基因
 cellchat <- identifyOverExpressedInteractions(cellchat) #02 识别高表达通路
 
 # project gene expression data onto PPI (Optional: when running it, USER should set `raw.use = FALSE` in the function `computeCommunProb()` in order to use the projected data)
@@ -64,7 +68,12 @@ cellchat <- identifyOverExpressedInteractions(cellchat) #02 识别高表达通�
 
 ##############Step4. 计算通讯概率，推断细胞通讯网络##############
 cellchat <- computeCommunProb(cellchat,population.size = F)
-cellchat <- computeCommunProbPathway(cellchat)
+#报错解决 #因为 RSubunitsV 变量是 NULL。这种情况发生在 cellchat@LR 槽为空时。换句话说，CellChat 无法在你提供的基因列表中识别任何相关的配体-受体对。这个槽会在你运行 identifyOverExpressedInteractions()时被填充
+#1. Use the correct CellChatDB--human
+#cellchat@data #2. check the input data matrix 
+#cellchat@data.signaling #3. check the subset data matrix
+#unique(cellchat@idents) #4. check the cell group information is correct
+#cellchat <- computeCommunProbPathway(cellchat)
 # 过滤掉通信数量少的细胞-细胞通信
 cellchat <- filterCommunication(cellchat, min.cells = 10)
 
@@ -79,10 +88,10 @@ head(df.net)
 #以通路为单位提取通讯信息
 df.pathway = subsetCommunication(cellchat,slot.name = "netP")
 head(df.pathway)
-levels(cellchat@idents)
 # 对感兴趣的细胞提取受配体信息
 # 这里的 source.use = c(1) 指的是Naive CD4 T，2和3分别对应Memory CD4 T和CD14+ Mono：
-df.net.sub <- subsetCommunication(cellchat, sources.use = c(1), targets.use = c(2,3))
+levels(cellchat@idents)
+df.net.sub <- subsetCommunication(cellchat, sources.use = c(1), targets.use = c(2,3)) #source.use顺序根据levels(cellchat@idents)顺序
 head(df.net.sub)
 
 # 对感兴趣的通路提取受配体信息
@@ -107,6 +116,7 @@ p2 = netVisual_circle(cellchat@net$weight, vertex.weight = groupSize,
                       title.name = "Interaction weights/strength")
 
 #由于细胞间通讯网络的复杂性，我们可以对每个细胞亚群发出的信号进行检测。这里我们还控制参数edge.weight.max，以便我们可以比较不同网络之间的边权值：
+#单独绘制每个细胞亚群发出的信号
 mat <- cellchat@net$weight
 par(mar = c(1, 1, 2, 1))  # 下，左，上，右的边距
 par(mfrow = c(3,3), xpd=TRUE)
@@ -117,11 +127,12 @@ for (i in 1:nrow(mat)) {
                         weight.scale = T, edge.weight.max = max(mat),
                         title.name = rownames(mat)[i])
 }
-saveRDS(cellchat,file = "~/Spark/Step1.CellCha_Res.rds")
+saveRDS(cellchat,file = "~/Spark/Cellchat/Step1.CellCha_Res.rds")
 
 ##############Step8. 可视化##############
+rm(list = ls())
 ####读入数据####
-cellchat = read_rds(file = "~/Spark/Step1.CellCha_Res.rds")
+cellchat = read_rds(file = "~/Spark/Cellchat/Step1.CellCha_Res.rds")
 pathways.show <- c("MIF") 
 
 #### 01 Hierarchy plot 层次图####
@@ -161,13 +172,13 @@ netVisual_heatmap(cellchat, signaling = pathways.show, color.heatmap = "Reds")
 ##############Step9. 计算每个配体-受体对L-R pairs对整个信号通路的贡献，并可视化单个配体-受体对介导的细胞-细胞通信##############
 netAnalysis_contribution(cellchat, signaling = pathways.show)
 # Chord diagram
-png("~/Spark/chord_plot2.png", width = 3000, height = 3000, res = 300)
+png("~/Spark/Cellchat/chord_plot2.png", width = 3000, height = 3000, res = 300)
 netVisual_individual(cellchat, signaling = pathways.show, pairLR.use = "MIF_CD74_CXCR4", layout = "chord")
 dev.off()
 
 ##############Step10. 自动保存所有推断网络##############
 #加载绘图函数
-source("~/Spark/R/custom_seurat_functions.R")
+source("~/Spark/Cellchat/custom_seurat_functions.R")
 # Access all the signaling pathways showing significant communications
 pathways.show.all <- cellchat@netP$pathways
 # check the order of cell identity to set suitable vertex.receiver
