@@ -17,6 +17,7 @@ pbmc3k= UpdateSeuratObject(object = pbmc3k)
 ## 1.2 构建cellchat对象
 #pbmc3k里的seurat_annotations有一些NA注释，过滤掉
 data.input = pbmc3k@assays$RNA@data  #NormalizeData()归一化后表达矩阵
+#data.input <- LayerData(chat_NR, assay = "RNA", layer = "data")  #注意：Seurat V5对data提取进行了优化，改为这个提取代码
 meta.data =  pbmc3k@meta.data  #存储每个细胞的元数据，用于质控，注释及可视化
 meta.data = meta.data[!is.na(meta.data$seurat_annotations),]
 data.input = data.input[,row.names(meta.data)]
