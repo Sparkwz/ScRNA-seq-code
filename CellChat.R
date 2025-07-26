@@ -1,24 +1,25 @@
 library(CellChat)
 library(patchwork)
 library(Seurat)
-library(pbmc3k.SeuratData)
+library(SeuratData)
+#InstallData("pbmc3k") 
 library(dplyr)
 library(aplot)
 library(ggplotify)
 library(readr)
-##############Step1. ¹¹½¨cellchat¶ÔÏó##############
-## 1.1 ¶ÁÈëÊı¾İ
+##############Step1. æ„å»ºcellchatå¯¹è±¡##############
+## 1.1 è¯»å…¥æ•°æ®
 data("pbmc3k")  
-pbmc3k
+pbmc3k= UpdateSeuratObject(object = pbmc3k)
 
-## 1.2 ¹¹½¨cellchat¶ÔÏó
-#pbmc3kÀïµÄseurat_annotationsÓĞÒ»Ğ©NA×¢ÊÍ£¬¹ıÂËµô
+## 1.2 æ„å»ºcellchatå¯¹è±¡
+#pbmc3ké‡Œçš„seurat_annotationsæœ‰ä¸€äº›NAæ³¨é‡Šï¼Œè¿‡æ»¤æ‰
 data.input = pbmc3k@assays$RNA@data
 meta.data =  pbmc3k@meta.data
 meta.data = meta.data[!is.na(meta.data$seurat_annotations),]
 data.input = data.input[,row.names(meta.data)]
 
-#ÉèÖÃÒò×ÓË®Æ½
+#è®¾ç½®å› å­æ°´å¹³
 meta.data$seurat_annotations = factor(meta.data$seurat_annotations,
                                       levels = c("Naive CD4 T", "Memory CD4 T", "CD14+ Mono", "B", "CD8 T", 
                                                  "FCGR3A+ Mono", "NK", "DC", "Platelet"))
@@ -28,18 +29,18 @@ cellchat <- createCellChat(object = data.input,
                            meta = meta.data, 
                            group.by = "seurat_annotations")
 
-###¿ÉÔÚcellchat¶ÔÏóµÄmeta²å²ÛÖĞÌí¼Ó±íĞÍĞÅÏ¢
-# Ìí¼Ómeta.dataĞÅÏ¢
+###å¯åœ¨cellchatå¯¹è±¡çš„metaæ’æ§½ä¸­æ·»åŠ è¡¨å‹ä¿¡æ¯
+# æ·»åŠ meta.dataä¿¡æ¯
 cellchat <- addMeta(cellchat, meta = meta.data)
 
-# ÉèÖÃÄ¬ÈÏµÄlabels
+# è®¾ç½®é»˜è®¤çš„labels
 levels(cellchat@idents) # show factor levels of the cell labels
 #cellchat <- setIdent(cellchat, ident.use = "new.labels") 
 #groupSize <- as.numeric(table(cellchat@idents)) # number of cells in each cell group
 
 
-##############Step2. ¼ÓÔØCellChatDBÊı¾İ¿â##############
-### 1.4 ¼ÓÔØCellChatÊÜÅäÌåÊı¾İ¿â
+##############Step2. åŠ è½½CellChatDBæ•°æ®åº“##############
+### 1.4 åŠ è½½CellChatå—é…ä½“æ•°æ®åº“
 CellChatDB <- CellChatDB.human #use CellChatDB.mouse if running on mouse data
 showDatabaseCategory(CellChatDB)
 # Show the structure of the database
@@ -49,52 +50,52 @@ dplyr::glimpse(CellChatDB$interaction)
 CellChatDB.use <- CellChatDB  # simply use the default CellChatDB
 cellchat@DB <- CellChatDB.use
 
-##############Step3. ¶Ô±í´ïÊı¾İ½øĞĞÔ¤´¦Àí##############
-### 1.5 ¶Ô±í´ïÊı¾İ½øĞĞÔ¤´¦Àí£¬ÓÃÓÚÏ¸°û¼äÍ¨Ñ¶·ÖÎö
+##############Step3. å¯¹è¡¨è¾¾æ•°æ®è¿›è¡Œé¢„å¤„ç†##############
+### 1.5 å¯¹è¡¨è¾¾æ•°æ®è¿›è¡Œé¢„å¤„ç†ï¼Œç”¨äºç»†èƒé—´é€šè®¯åˆ†æ
 # subset the expression data of signaling genes for saving computation cost
 cellchat <- subsetData(cellchat) # This step is necessary even if using the whole database
 future::plan("multisession", workers = 2) # do parallel
 
-cellchat <- identifyOverExpressedGenes(cellchat) #01 Ê¶±ğ¸ß±í´ï»ùÒò
-cellchat <- identifyOverExpressedInteractions(cellchat) #02 Ê¶±ğ¸ß±í´ïÍ¨Â·
+cellchat <- identifyOverExpressedGenes(cellchat) #01 è¯†åˆ«é«˜è¡¨è¾¾åŸºå› 
+cellchat <- identifyOverExpressedInteractions(cellchat) #02 è¯†åˆ«é«˜è¡¨è¾¾é€šè·¯
 
 # project gene expression data onto PPI (Optional: when running it, USER should set `raw.use = FALSE` in the function `computeCommunProb()` in order to use the projected data)
 # cellchat <- projectData(cellchat, PPI.human)
 
-##############Step4. ¼ÆËãÍ¨Ñ¶¸ÅÂÊ£¬ÍÆ¶ÏÏ¸°ûÍ¨Ñ¶ÍøÂç##############
+##############Step4. è®¡ç®—é€šè®¯æ¦‚ç‡ï¼Œæ¨æ–­ç»†èƒé€šè®¯ç½‘ç»œ##############
 cellchat <- computeCommunProb(cellchat,population.size = F)
 cellchat <- computeCommunProbPathway(cellchat)
-# ¹ıÂËµôÍ¨ĞÅÊıÁ¿ÉÙµÄÏ¸°û-Ï¸°ûÍ¨ĞÅ
+# è¿‡æ»¤æ‰é€šä¿¡æ•°é‡å°‘çš„ç»†èƒ-ç»†èƒé€šä¿¡
 cellchat <- filterCommunication(cellchat, min.cells = 10)
 
-##############Step5. ÌáÈ¡Ô¤²âµÄÏ¸°ûÍ¨Ñ¶ÍøÂçÎªdata frame##############
-### cellchatÈ¡×Ó¼¯(±¨´í)
+##############Step5. æå–é¢„æµ‹çš„ç»†èƒé€šè®¯ç½‘ç»œä¸ºdata frame##############
+### cellchatå–å­é›†(æŠ¥é”™)
 #barcode.use = sample(row.names(cellchat@meta),100)
 #cellchat.subset = subsetCellChat(cellchat,cells.use = barcode.use)
-#»ñÈ¡ËùÓĞµÄÅäÊÜÌå¶ÔÒÔ¼°ÆäÍ¨Ñ¶¸ÅÂÊ
+#è·å–æ‰€æœ‰çš„é…å—ä½“å¯¹ä»¥åŠå…¶é€šè®¯æ¦‚ç‡
 df.net <- subsetCommunication(cellchat)
 head(df.net)
 
-#ÒÔÍ¨Â·Îªµ¥Î»ÌáÈ¡Í¨Ñ¶ĞÅÏ¢
+#ä»¥é€šè·¯ä¸ºå•ä½æå–é€šè®¯ä¿¡æ¯
 df.pathway = subsetCommunication(cellchat,slot.name = "netP")
 head(df.pathway)
 levels(cellchat@idents)
-# ¶Ô¸ĞĞËÈ¤µÄÏ¸°ûÌáÈ¡ÊÜÅäÌåĞÅÏ¢
-# ÕâÀïµÄ source.use = c(1) Ö¸µÄÊÇNaive CD4 T£¬2ºÍ3·Ö±ğ¶ÔÓ¦Memory CD4 TºÍCD14+ Mono£º
+# å¯¹æ„Ÿå…´è¶£çš„ç»†èƒæå–å—é…ä½“ä¿¡æ¯
+# è¿™é‡Œçš„ source.use = c(1) æŒ‡çš„æ˜¯Naive CD4 Tï¼Œ2å’Œ3åˆ†åˆ«å¯¹åº”Memory CD4 Tå’ŒCD14+ Monoï¼š
 df.net.sub <- subsetCommunication(cellchat, sources.use = c(1), targets.use = c(2,3))
 head(df.net.sub)
 
-# ¶Ô¸ĞĞËÈ¤µÄÍ¨Â·ÌáÈ¡ÊÜÅäÌåĞÅÏ¢
+# å¯¹æ„Ÿå…´è¶£çš„é€šè·¯æå–å—é…ä½“ä¿¡æ¯
 df.net.sub <- subsetCommunication(cellchat, signaling = c("MIF", "MHC-I"))
 head(df.net.sub)
 
-##############Step6. ÔÚĞÅºÅÍ¨Â·Ë®Æ½ÍÆ¶ÏÏ¸°ûÍ¨Ñ¶##############
+##############Step6. åœ¨ä¿¡å·é€šè·¯æ°´å¹³æ¨æ–­ç»†èƒé€šè®¯##############
 cellchat <- computeCommunProbPathway(cellchat)
 head(cellchat@net)
 head(cellchat@netP)
 
-##############Step7. ¼ÆËã¼ÓºÍµÄcell-cellÍ¨Ñ¶ÍøÂç##############
-#¿ÉÊÓ»¯¼ÓºÍµÄÏ¸°û¼äÍ¨Ñ¶ÍøÂç¡£ÀıÈç£¬Ê¹ÓÃcircle plotÏÔÊ¾ÈÎÒâÁ½¸öÏ¸°ûÑÇÈºÖ®¼äµÄÍ¨Ñ¶´ÎÊı»ò×ÜÍ¨Ñ¶Ç¿¶È(È¨ÖØ)
+##############Step7. è®¡ç®—åŠ å’Œçš„cell-cellé€šè®¯ç½‘ç»œ##############
+#å¯è§†åŒ–åŠ å’Œçš„ç»†èƒé—´é€šè®¯ç½‘ç»œã€‚ä¾‹å¦‚ï¼Œä½¿ç”¨circle plotæ˜¾ç¤ºä»»æ„ä¸¤ä¸ªç»†èƒäºšç¾¤ä¹‹é—´çš„é€šè®¯æ¬¡æ•°æˆ–æ€»é€šè®¯å¼ºåº¦(æƒé‡)
 cellchat <- aggregateNet(cellchat)
 groupSize <- as.numeric(table(cellchat@idents))
 par(mfrow = c(1,2), xpd=TRUE)
@@ -105,9 +106,9 @@ p2 = netVisual_circle(cellchat@net$weight, vertex.weight = groupSize,
                       weight.scale = T, label.edge= F,
                       title.name = "Interaction weights/strength")
 
-#ÓÉÓÚÏ¸°û¼äÍ¨Ñ¶ÍøÂçµÄ¸´ÔÓĞÔ£¬ÎÒÃÇ¿ÉÒÔ¶ÔÃ¿¸öÏ¸°ûÑÇÈº·¢³öµÄĞÅºÅ½øĞĞ¼ì²â¡£ÕâÀïÎÒÃÇ»¹¿ØÖÆ²ÎÊıedge.weight.max£¬ÒÔ±ãÎÒÃÇ¿ÉÒÔ±È½Ï²»Í¬ÍøÂçÖ®¼äµÄ±ßÈ¨Öµ£º
+#ç”±äºç»†èƒé—´é€šè®¯ç½‘ç»œçš„å¤æ‚æ€§ï¼Œæˆ‘ä»¬å¯ä»¥å¯¹æ¯ä¸ªç»†èƒäºšç¾¤å‘å‡ºçš„ä¿¡å·è¿›è¡Œæ£€æµ‹ã€‚è¿™é‡Œæˆ‘ä»¬è¿˜æ§åˆ¶å‚æ•°edge.weight.maxï¼Œä»¥ä¾¿æˆ‘ä»¬å¯ä»¥æ¯”è¾ƒä¸åŒç½‘ç»œä¹‹é—´çš„è¾¹æƒå€¼ï¼š
 mat <- cellchat@net$weight
-par(mar = c(1, 1, 2, 1))  # ÏÂ£¬×ó£¬ÉÏ£¬ÓÒµÄ±ß¾à
+par(mar = c(1, 1, 2, 1))  # ä¸‹ï¼Œå·¦ï¼Œä¸Šï¼Œå³çš„è¾¹è·
 par(mfrow = c(3,3), xpd=TRUE)
 for (i in 1:nrow(mat)) {
   mat2 <- matrix(0, nrow = nrow(mat), ncol = ncol(mat), dimnames = dimnames(mat))
@@ -118,24 +119,24 @@ for (i in 1:nrow(mat)) {
 }
 saveRDS(cellchat,file = "~/Spark/Step1.CellCha_Res.rds")
 
-##############Step8. ¿ÉÊÓ»¯##############
-####¶ÁÈëÊı¾İ####
+##############Step8. å¯è§†åŒ–##############
+####è¯»å…¥æ•°æ®####
 cellchat = read_rds(file = "~/Spark/Step1.CellCha_Res.rds")
 pathways.show <- c("MIF") 
 
-#### 01 Hierarchy plot ²ã´ÎÍ¼####
+#### 01 Hierarchy plot å±‚æ¬¡å›¾####
 # Here we define `vertex.receive` so that the left portion of the hierarchy plot shows signaling to fibroblast and the right portion shows signaling to immune cells 
 vertex.receiver = c(1,2,3,4) # a numeric vector. 
 netVisual_aggregate(cellchat, signaling = pathways.show,  vertex.receiver = vertex.receiver, layout = "hierarchy")
 levels(cellchat@idents)
 levels(cellchat@idents)[c(1,2,3,4)]
 
-#### 02 Circle plot show pathway Ô²È¦Í¼####
+#### 02 Circle plot show pathway åœ†åœˆå›¾####
 par(mfrow=c(1,2))
 netVisual_aggregate(cellchat, signaling = pathways.show, layout = "circle")
 netVisual_aggregate(cellchat, signaling = pathways.show, layout = "circle",label.edge= T)
 # Circle plot show L-R pairs 
-# ÓÃextractEnrichedLRº¯ÊıÌáÈ¡Ö¸¶¨pathwaysÄÚµÄËùÓĞÊÜÅäÌåĞÅºÅÖµ
+# ç”¨extractEnrichedLRå‡½æ•°æå–æŒ‡å®špathwayså†…çš„æ‰€æœ‰å—é…ä½“ä¿¡å·å€¼
 pairLR.CXCL <- extractEnrichedLR(cellchat, signaling = pathways.show, geneLR.return = FALSE)
 LR.show <- pairLR.CXCL[1,] # show one ligand-receptor pair
 LR.show
@@ -143,29 +144,29 @@ LR.show
 # Vis
 netVisual_individual(cellchat, signaling = pathways.show,  pairLR.use = "MIF_CD74_CXCR4", layout = "circle")
 
-#### 03 Chord diagram ºÍÏÒÍ¼####
+#### 03 Chord diagram å’Œå¼¦å›¾####
 par(mfrow = c(1,2), xpd=TRUE)
 png("~/Spark/chord_plot.png", width = 3000, height = 3000, res = 300)
 netVisual_aggregate(cellchat, signaling = pathways.show, layout = "chord",title.name = "Chord diagram  1")
 dev.off()
-# Chord diagram 2 show L-R pairs ÏÔÊ¾ÅäÊÜÌå²ãÃæµÄºÍÏÒÍ¼£¬Ö¸¶¨slot.nameÎªnet
+# Chord diagram 2 show L-R pairs æ˜¾ç¤ºé…å—ä½“å±‚é¢çš„å’Œå¼¦å›¾ï¼ŒæŒ‡å®šslot.nameä¸ºnet
 netVisual_chord_gene(cellchat, sources.use = 1, targets.use = c(5:8), lab.cex = 0.5,title.name = "Chord diagram  2: show gene",slot.name = "net")
-# Chord diagram 3 show pathway ÏÔÊ¾Í¨Â·²ãÃæµÄºÍÏÒÍ¼£¬Ö¸¶¨slot.nameÎªnetP
+# Chord diagram 3 show pathway æ˜¾ç¤ºé€šè·¯å±‚é¢çš„å’Œå¼¦å›¾ï¼ŒæŒ‡å®šslot.nameä¸ºnetP
 netVisual_chord_gene(cellchat, sources.use = 1, targets.use = c(5:8), lab.cex = 0.5,slot.name = "netP",title.name = "Chord diagram  2: show pathway")
 
-#### 04 Heatmap ÈÈÍ¼####
+#### 04 Heatmap çƒ­å›¾####
 par(mfrow=c(1,1))
 netVisual_heatmap(cellchat, signaling = pathways.show, color.heatmap = "Reds")
 
-##############Step9. ¼ÆËãÃ¿¸öÅäÌå-ÊÜÌå¶ÔL-R pairs¶ÔÕû¸öĞÅºÅÍ¨Â·µÄ¹±Ï×£¬²¢¿ÉÊÓ»¯µ¥¸öÅäÌå-ÊÜÌå¶Ô½éµ¼µÄÏ¸°û-Ï¸°ûÍ¨ĞÅ##############
+##############Step9. è®¡ç®—æ¯ä¸ªé…ä½“-å—ä½“å¯¹L-R pairså¯¹æ•´ä¸ªä¿¡å·é€šè·¯çš„è´¡çŒ®ï¼Œå¹¶å¯è§†åŒ–å•ä¸ªé…ä½“-å—ä½“å¯¹ä»‹å¯¼çš„ç»†èƒ-ç»†èƒé€šä¿¡##############
 netAnalysis_contribution(cellchat, signaling = pathways.show)
 # Chord diagram
 png("~/Spark/chord_plot2.png", width = 3000, height = 3000, res = 300)
 netVisual_individual(cellchat, signaling = pathways.show, pairLR.use = "MIF_CD74_CXCR4", layout = "chord")
 dev.off()
 
-##############Step10. ×Ô¶¯±£´æËùÓĞÍÆ¶ÏÍøÂç##############
-#¼ÓÔØ»æÍ¼º¯Êı
+##############Step10. è‡ªåŠ¨ä¿å­˜æ‰€æœ‰æ¨æ–­ç½‘ç»œ##############
+#åŠ è½½ç»˜å›¾å‡½æ•°
 source("~/Spark/R/custom_seurat_functions.R")
 # Access all the signaling pathways showing significant communications
 pathways.show.all <- cellchat@netP$pathways
@@ -175,12 +176,12 @@ vertex.receiver = seq(1,4)
 # Vis
 gg.list = list()
 for (i in 1:length(pathways.show.all)) {
-  ## ¿ÉÊÓ»¯1£ºhierarchy plot ¿ÉÊÓ»¯ÅäÊÜÌå¶Ô netVisual.V2ÊÇÔÚ×÷ÕßµÄnetVisual»ù´¡ÉÏ²¹³äÁËout.dir²ÎÊı
+  ## å¯è§†åŒ–1ï¼šhierarchy plot å¯è§†åŒ–é…å—ä½“å¯¹ netVisual.V2æ˜¯åœ¨ä½œè€…çš„netVisualåŸºç¡€ä¸Šè¡¥å……äº†out.dirå‚æ•°
   # Visualize communication network associated with both signaling pathway and individual L-R pairs
   netVisual.V2(cellchat, signaling = pathways.show.all[i],out.format = c("png"),
-               vertex.receiver = vertex.receiver, layout = "hierarchy",out.dir = "~/Spark/")#ĞŞ¸Ä´æ´¢Ä¿Â¼
+               vertex.receiver = vertex.receiver, layout = "hierarchy",out.dir = "~/Spark/")#ä¿®æ”¹å­˜å‚¨ç›®å½•
   
-  ## ¿ÉÊÓ»¯2£º Öù×´Í¼¿ÉÊÓ»¯ÅäÊÜÌå¶Ô 
+  ## å¯è§†åŒ–2ï¼š æŸ±çŠ¶å›¾å¯è§†åŒ–é…å—ä½“å¯¹ 
   # Compute and visualize the contribution of each ligand-receptor pair to the overall signaling pathway
   gg <- netAnalysis_contribution(cellchat, signaling = pathways.show.all[i])
   gg.list[[pathways.show.all[i]]] = gg
@@ -191,7 +192,7 @@ gg.plot = wrap_plots(gg.list,ncol = 5)
 gg.plot
 ggsave(gg.plot,filename = "~/Spark/Step2.L_R_contribution.pdf",width = 14, height = 10)
 
-##############Step11. ¹Û²ì¶àÖÖÅäÌåÊÜÌå»òĞÅºÅÍ¨Â·½éµ¼µÄÏ¸°û-Ï¸°ûÍ¨ĞÅ##############
+##############Step11. è§‚å¯Ÿå¤šç§é…ä½“å—ä½“æˆ–ä¿¡å·é€šè·¯ä»‹å¯¼çš„ç»†èƒ-ç»†èƒé€šä¿¡##############
 ### Bubble plot
 # show all the significant interactions (L-R pairs) from some cell groups (defined by 'sources.use') to other cell groups (defined by 'targets.use')
 options(repr.plot.width = 4, repr.plot.height = 5)
@@ -205,12 +206,12 @@ pairLR.use  = pairLR.use[c(1,3),,drop=F]
 netVisual_bubble(cellchat, sources.use = c(1), targets.use = c(1:5), 
                  pairLR.use = pairLR.use, remove.isolate = TRUE)
 
-##############Step12. Ê¹ÓÃĞ¡ÌáÇÙ/ÆøÅİÍ¼»æÖÆĞÅºÅ»ùÒò±í´ï·Ö²¼##############
+##############Step12. ä½¿ç”¨å°æç´/æ°”æ³¡å›¾ç»˜åˆ¶ä¿¡å·åŸºå› è¡¨è¾¾åˆ†å¸ƒ##############
 options(repr.plot.width = 8, repr.plot.height = 4.5)
 plotGeneExpression(cellchat, signaling = "MIF")
 dev.off()
-##############Step13. Ê¶±ğÏ¸°ûÑÇÈºµÄĞÅºÅ×÷ÓÃ£¨ÀıÈçÖ÷ÒªµÄ·¢ËÍÕß£¬½ÓÊÕÕß£©ÒÔ¼°Ö÷ÒªµÄ¹±Ï×ĞÅºÅ##############
-##¼ÆËã²¢¿ÉÊÓ»¯ÍøÂçÖĞĞÄĞÔµÃ·Ö##
+##############Step13. è¯†åˆ«ç»†èƒäºšç¾¤çš„ä¿¡å·ä½œç”¨ï¼ˆä¾‹å¦‚ä¸»è¦çš„å‘é€è€…ï¼Œæ¥æ”¶è€…ï¼‰ä»¥åŠä¸»è¦çš„è´¡çŒ®ä¿¡å·##############
+##è®¡ç®—å¹¶å¯è§†åŒ–ç½‘ç»œä¸­å¿ƒæ€§å¾—åˆ†##
 # Compute the network centrality scores
 cellchat <- netAnalysis_computeCentrality(cellchat, slot.name = "netP") # the slot 'netP' means the inferred intercellular communication network of signaling pathways
 # Visualize the computed centrality scores using heatmap, allowing ready identification of major signaling roles of cell groups
@@ -220,9 +221,9 @@ netAnalysis_signalingRole_network(cellchat,
                                   signaling = pathways.show,
                                   width = 8, height = 2.5,
                                   font.size = 10)
-# Ê¶±ğ¶ÔÄ³Ğ©Ï¸°ûÑÇÈºµÄÊä³ö»òÊäÈëĞÅºÅÖĞ¹±Ï××î´óµÄĞÅºÅ
+# è¯†åˆ«å¯¹æŸäº›ç»†èƒäºšç¾¤çš„è¾“å‡ºæˆ–è¾“å…¥ä¿¡å·ä¸­è´¡çŒ®æœ€å¤§çš„ä¿¡å·
 # Signaling role analysis on the aggregated cell-cell communication network from all signaling pathways
 ht1 <- netAnalysis_signalingRole_heatmap(cellchat, pattern = "outgoing")
 ht2 <- netAnalysis_signalingRole_heatmap(cellchat, pattern = "incoming")
 ht1+ht2
-##¶à·Ö×é´úÂë
+##å¤šåˆ†ç»„ä»£ç 
