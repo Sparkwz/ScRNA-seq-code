@@ -274,6 +274,62 @@ reg.csv \
 - **Hierarchy plot 层次图**: USER should define vertex.receiver, which is a numeric vector giving the index of the cell groups as targets in the left part of hierarchy plot. This hierarchical plot consist of two components: the left portion shows autocrine and paracrine signaling to certain cell groups of interest (i.e, the defined vertex.receiver), and the right portion shows autocrine and paracrine signaling to the remaining cell groups in the dataset. Thus, hierarchy plot provides an informative and intuitive way to visualize autocrine and paracrine signaling communications between cell groups of interest. For example, when studying the cell-cell communication between fibroblasts and immune cells, USER can define vertex.receiver as all fibroblast cell groups.
 - **Circle plot 圆圈图**：Visualization of cell-cell communication at different levels**: One can visualize the inferred communication network of signaling pathways using netVisual_aggregate, and visualize the inferred communication networks of individual L-R pairs associated with that signaling pathway using netVisual_individual.
 - **Chord diagram 和弦图**: CellChat provides two functions netVisual_chord_cell and netVisual_chord_gene for visualizing cell-cell communication with different purposes and different levels. netVisual_chord_cell is used for visualizing the cell-cell communication between different cell groups (where each sector in the chord diagram is a cell group), and netVisual_chord_gene is used for visualizing the cell-cell communication mediated by mutiple ligand-receptors or signaling pathways (where each sector in the chord diagram is a ligand, receptor or signaling pathway.)
+- **Heatmap 热图**
+  - **区域 1（中间主体热图）**
+    - 纵轴 (Sources [Sender]):表示信号发送的细胞类型
+    - 横轴（Targets [Receiver]）：表示信号接收的细胞类型
+    - 热图的颜色代表细胞间通讯的概率，**颜色越深表示通讯概率越高**。比如：CD14 Mono 到 CD4 Memory T的格子颜色很深，这表明 CD14 单核细胞向 CD8 T 细胞发送信号的概率很高
+    - 如果某个格子颜色很浅或白色，这可能表示这两种细胞类型之间几乎没有信号传递
+  - **区域 2（顶部的彩色条形图）**
+    - 表示的是列（Targets [Receiver]）的每种细胞类型的接收信号的总量，预计是B细胞的prob占比之和
+  - **区域 3（右侧的颜色条）**
+    - 表示热图中颜色与通讯概率之间的对应关系
+    - 颜色条上的数值（如0.05, 0.04, 0.03, 0.02, 0.01, 0）对应于热图中的颜色深浅，颜色越深表示通讯概率越高
+```
+##批量可视化
+lapply(path , function(type){
+  # type = "CCL"
+  pathways.show <- type             #指定需要展示的通路
+  # Hierarchy plot
+  pdf(file = paste0(type,"_sig_pathway_hierarchy.pdf"),
+      width = 1000/100, height = 650/100)
+  netVisual_aggregate(cellchat, signaling = pathways.show,  
+                      vertex.receiver = vertex.receiver,layout = "hierarchy",
+                      vertex.weight = groupSize)
+  dev.off()
+  # Circle plot
+  pdf(file = paste0(type,"_sig_pathway_circle.pdf"),
+      width = 650/100, height = 600/100)
+  netVisual_aggregate(cellchat, signaling = pathways.show, layout = "circle", vertex.weight = groupSize)
+  dev.off()
+  # chord plot
+  pdf(file = paste0(type,"_sig_pathway_chord.pdf"), 
+      width = 650/100, height = 600/100)
+  netVisual_aggregate(cellchat, signaling = pathways.show, layout = "chord", vertex.weight = groupSize)
+  dev.off()
+  # Heatmap
+  pdf(file = paste0(type,"_sig_pathway_heatmap.pdf"),
+      width = 650/100, height = 600/100)
+  p <- netVisual_heatmap(cellchat, signaling = pathways.show, color.heatmap = "Reds")
+  print(p)
+  dev.off()
+  # 计算配体-受体对信号网络的贡献度
+  pdf(file = paste0(type,"sig_pathway_L-R.pdf"), 
+      width = 8, height = 6)
+  print(netAnalysis_contribution(cellchat, signaling = pathways.show))
+  dev.off()
+  
+  # 分析细胞在信号网络中角色
+  cellchat <- netAnalysis_computeCentrality(cellchat, slot.name = "netP")
+  # netP，表示推断的信号通路的细胞间通讯网络
+  pdf(file = paste0(type,"_sig_pathway_role.pdf"), 
+      width = 8, height = 6)
+  netAnalysis_signalingRole_network(cellchat, signaling = pathways.show,
+                                    width = 10, height = 2.5, font.size = 10)
+  dev.off()
+  
+})
+```
 ## 拷贝数变异分析 inferCNV
 ### inferCNV 三步骤
 1. 基于单细胞数据构建inferCNV对象
