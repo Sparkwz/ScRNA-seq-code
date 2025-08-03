@@ -331,10 +331,15 @@ lapply(path , function(type){
 })
 ```
 ## 拷贝数变异分析 inferCNV
-### inferCNV 三步骤
+- **CNV(Copy number variation, 拷贝数变异)**，是由于基因组发生重排而导致的大小介于1kb至3Mb的DNA片段的变异，是基因组结构变异（SV）的组成部分，其突变率远超过SNPs(Single Nucleotide Polymorphisms, 单核苷酸多态性)，是人类疾病的重要致病因素之一
+- InferCNV和copyKAT是最常用的两种方法
+- copyKAT介绍链接[link](https://mp.weixin.qq.com/s/nRHHbfMyNmoff45bH2dsRw)
+- copyKAT应用链接[link](https://mp.weixin.qq.com/s/D3DnZPYdWfls4-5UXh1gJw)
+### inferCNV 三步走
 1. 基于单细胞数据构建inferCNV对象
 2. `infercnv::run()`函数一键运行
 3. 个性化分析和可视化
+
 ## 使用单细胞数据联合Bulk表型分析（ScAB/Scissor算法）
 - 参考文献：PMID 37652986/PMID: 36368318
 ### Scissor
