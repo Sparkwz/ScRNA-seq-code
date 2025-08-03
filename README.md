@@ -336,9 +336,12 @@ lapply(path , function(type){
 - copyKAT介绍链接[link](https://mp.weixin.qq.com/s/nRHHbfMyNmoff45bH2dsRw)
 - copyKAT应用链接[link](https://mp.weixin.qq.com/s/D3DnZPYdWfls4-5UXh1gJw)
 ### inferCNV 三步走
-1. 基于单细胞数据构建inferCNV对象
-2. `infercnv::run()`函数一键运行
-3. 个性化分析和可视化
+- 基于单细胞数据构建inferCNV对象（准备三个文件：conut matrix；cell type annotations；gene ordering file）
+  - count matrix文件是行为基因，列为细胞的文件
+  - cell type annotations文件分为两列，左边为细胞名称，右边为已知的细胞类型，比如：细胞的生物学定义/数字编号的细胞簇名
+  - gene ordering file文件提供了每个基因的染色体位置，格式为制表符分隔，没有列标题，提供基因名称、染色体和基因跨度, 下载地址[link](https://data.broadinstitute.org/Trinity/CTAT/cnv/)
+3. `infercnv::run()`函数一键运行
+4. 个性化分析和可视化
 
 ## 使用单细胞数据联合Bulk表型分析（ScAB/Scissor算法）
 - 参考文献：PMID 37652986/PMID: 36368318
